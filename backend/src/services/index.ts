@@ -2,3 +2,4 @@
 export * as authService from './authService';
 export * as accountService from './accountService';
 export * as promptService from './promptService';
+export * as fragmentService from './fragmentService';
