@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Filter, Copy, Edit2, Trash2, History } from 'lucide-react';
+import { Plus, Search, Filter, Copy, Edit2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { usePromptStore } from '../store/promptStore';
 import { useAccountStore } from '../store/accountStore';
@@ -20,14 +20,14 @@ export default function PromptsPage() {
     removePrompt,
   } = usePromptStore();
 
-  const { accounts, activeAccount, setAccounts } = useAccountStore();
+  const { activeAccount, setAccounts } = useAccountStore();
 
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedTags, setSelectedTags] = useState('');
+  const [selectedTags] = useState('');
 
   const [formData, setFormData] = useState<CreatePromptRequest>({
     accountId: '',

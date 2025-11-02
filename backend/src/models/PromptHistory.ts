@@ -28,8 +28,8 @@ PromptHistorySchema.index({ promptId: 1, version: -1 });
 
 // Remove __v from JSON responses
 PromptHistorySchema.set('toJSON', {
-  transform: (doc, ret) => {
-    delete ret.__v;
+  transform: (_doc, ret) => {
+    delete (ret as any).__v;
     return ret;
   },
 });

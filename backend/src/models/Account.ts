@@ -52,9 +52,9 @@ AccountSchema.pre('save', async function (next) {
 
 // Never expose the encrypted API key in JSON responses
 AccountSchema.set('toJSON', {
-  transform: (doc, ret) => {
-    delete ret.apiKey;
-    delete ret.__v;
+  transform: (_doc, ret) => {
+    delete (ret as any).apiKey;
+    delete (ret as any).__v;
     return ret;
   },
 });

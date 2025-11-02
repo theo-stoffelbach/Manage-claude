@@ -3,10 +3,10 @@ import { Plus, Trash2, Check, Edit2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAccountStore } from '../store/accountStore';
 import { accountService } from '../services';
-import { CreateAccountRequest, UpdateAccountRequest } from '../types';
+import { CreateAccountRequest } from '../types';
 
 export default function AccountsPage() {
-  const { accounts, activeAccount, setAccounts, addAccount, updateAccount, removeAccount } =
+  const { accounts, setAccounts, addAccount, updateAccount, removeAccount } =
     useAccountStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -84,7 +84,7 @@ export default function AccountsPage() {
 
   const handleSetActive = async (accountId: string) => {
     try {
-      const { account } = await accountService.setActiveAccount(accountId);
+      await accountService.setActiveAccount(accountId);
       // Update all accounts - deactivate others
       setAccounts(
         accounts.map((a) => ({

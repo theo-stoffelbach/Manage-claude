@@ -7,7 +7,7 @@ import {
   FillVariablesInput,
   RestoreVersionInput,
 } from '../utils/validation';
-import { NotFoundError, ValidationError } from '../middleware/errorHandler';
+import { NotFoundError } from '../middleware/errorHandler';
 
 /**
  * Create a new prompt

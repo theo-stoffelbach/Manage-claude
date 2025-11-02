@@ -30,8 +30,8 @@ FragmentSchema.index({ userId: 1, name: 1 }, { unique: true });
 
 // Remove __v from JSON responses
 FragmentSchema.set('toJSON', {
-  transform: (doc, ret) => {
-    delete ret.__v;
+  transform: (_doc, ret) => {
+    delete (ret as any).__v;
     return ret;
   },
 });

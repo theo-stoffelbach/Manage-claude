@@ -12,7 +12,7 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string) {
+  constructor(message: string = 'Validation failed') {
     super(400, message);
   }
 }
@@ -31,9 +31,9 @@ export class NotFoundError extends AppError {
 
 export function errorHandler(
   err: Error | AppError,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
   if (err instanceof AppError) {
     res.status(err.statusCode).json({

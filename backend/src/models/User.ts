@@ -27,9 +27,9 @@ UserSchema.index({ email: 1 });
 
 // Remove password from JSON responses
 UserSchema.set('toJSON', {
-  transform: (doc, ret) => {
-    delete ret.passwordHash;
-    delete ret.__v;
+  transform: (_doc, ret) => {
+    delete (ret as any).passwordHash;
+    delete (ret as any).__v;
     return ret;
   },
 });

@@ -1,6 +1,6 @@
 import CryptoJS from 'crypto-js';
 
-const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET;
+const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET || '';
 
 if (!ENCRYPTION_SECRET) {
   throw new Error('ENCRYPTION_SECRET environment variable is not set');
