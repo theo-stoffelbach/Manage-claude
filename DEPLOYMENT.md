@@ -4,7 +4,7 @@
 
 - **Docker** : version 20.10+
 - **Docker Compose** : version 2.0+
-- **Ports disponibles** : 3000, 5000, 27017
+- **Ports disponibles** : 3005, 3105, 27017
 
 ---
 
@@ -70,15 +70,15 @@ Vous devriez voir :
 
 ### URLs de l'application
 
-- **Frontend** : http://localhost:3000
-- **Backend API** : http://localhost:5000/api
-- **Health Check** : http://localhost:5000/health
+- **Frontend** : http://localhost:3005
+- **Backend API** : http://localhost:3105/api
+- **Health Check** : http://localhost:3105/health
 
 ### Tester l'API
 
 ```bash
 # Health check
-curl http://localhost:5000/health
+curl http://localhost:3105/health
 
 # Devrait retourner:
 # {"status":"ok","timestamp":"2025-11-02T..."}
@@ -90,7 +90,7 @@ curl http://localhost:5000/health
 
 ### 1. Créer un compte utilisateur
 
-1. Ouvrir http://localhost:3000
+1. Ouvrir http://localhost:3005
 2. Cliquer sur "Register here"
 3. Créer un compte :
    - Email : `test@example.com`
@@ -271,15 +271,15 @@ docker-compose ps
 
 ```bash
 # Health check
-curl http://localhost:5000/health
+curl http://localhost:3105/health
 
 # Register (créer un user)
-curl -X POST http://localhost:5000/api/auth/register \
+curl -X POST http://localhost:3105/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123"}'
 
 # Login (obtenir un token)
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://localhost:3105/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123"}'
 ```
@@ -372,20 +372,20 @@ docker-compose up -d backend
 
 Vérifier que `FRONTEND_URL` dans `backend/.env` correspond à l'URL frontend :
 ```
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:3005
 ```
 
 ### Port déjà utilisé
 
 ```bash
 # Trouver quel processus utilise le port
-sudo lsof -i :3000
-sudo lsof -i :5000
+sudo lsof -i :3005
+sudo lsof -i :3105
 
-# Changer les ports dans docker-compose.yml
+# Changer les ports dans docker-compose.yml si nécessaire
 ports:
-  - "3001:80"  # Frontend
-  - "5001:5000"  # Backend
+  - "3006:3005"  # Frontend
+  - "3106:3105"  # Backend
 ```
 
 ---
@@ -410,7 +410,7 @@ npm run dev  # Démarre sur port 5173
 
 ⚠️ Modifier `frontend/.env` :
 ```
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:3105/api
 ```
 
 ---
@@ -419,12 +419,12 @@ VITE_API_URL=http://localhost:5000/api
 
 - [x] Fichiers `.env` créés avec secrets
 - [x] Docker et Docker Compose installés
-- [x] Ports 3000, 5000, 27017 disponibles
+- [x] Ports 3005, 3105, 27017 disponibles
 - [ ] `docker-compose build` exécuté avec succès
 - [ ] `docker-compose up -d` démarré
 - [ ] Les 3 services sont "healthy"
-- [ ] http://localhost:3000 accessible
-- [ ] http://localhost:5000/health retourne OK
+- [ ] http://localhost:3005 accessible
+- [ ] http://localhost:3105/health retourne OK
 - [ ] Compte créé et login fonctionnel
 - [ ] Account Claude ajouté
 - [ ] Prompt créé avec succès

@@ -27,13 +27,13 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: 5000
+      PORT: 3105
       MONGODB_URI: mongodb://mongodb:27017/claude-manager
       JWT_SECRET: ${JWT_SECRET}
       ENCRYPTION_SECRET: ${ENCRYPTION_SECRET}
-      FRONTEND_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost:3005
     ports:
-      - "5000:5000"
+      - "3105:3105"
     depends_on:
       mongodb:
         condition: service_healthy
@@ -42,7 +42,7 @@ services:
     volumes:
       - ./backend/src:/app/src:ro
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3105/health"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -54,15 +54,15 @@ services:
     container_name: claude_manager_frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3005:3005"
     depends_on:
       - backend
     networks:
       - claude_network
     environment:
-      VITE_API_URL: http://backend:5000
+      VITE_API_URL: http://localhost:3105/api
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3005/"]
       interval: 30s
       timeout: 3s
       retries: 3

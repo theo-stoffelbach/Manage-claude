@@ -19,15 +19,15 @@ docker-compose ps
 
 ## 🌐 Accéder à l'application
 
-**Frontend** : http://localhost:3000
-**Backend API** : http://localhost:5000/api
-**Health Check** : http://localhost:5000/health
+**Frontend** : http://localhost:3005
+**Backend API** : http://localhost:3105/api
+**Health Check** : http://localhost:3105/health
 
 ---
 
 ## 👤 Premier test
 
-1. Ouvrir http://localhost:3000
+1. Ouvrir http://localhost:3005
 2. **Créer un compte** :
    - Cliquer sur "Register here"
    - Email : `test@example.com`
@@ -71,5 +71,5 @@ Voir **DEPLOYMENT.md** pour le guide complet et le debugging.
 
 **Services démarrés** :
 - 🗄️ MongoDB (port 27017)
-- 🔧 Backend Express (port 5000)
-- 🎨 Frontend React (port 3000)
+- 🔧 Backend Express (port 3105)
+- 🎨 Frontend React Vite (port 3005)
