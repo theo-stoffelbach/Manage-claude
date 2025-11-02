@@ -1,21 +1,42 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import PromptsPage from './pages/PromptsPage';
+import AccountsPage from './pages/AccountsPage';
+import FragmentsPage from './pages/FragmentsPage';
 
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Toaster position="top-right" />
+      <Toaster position="top-right" />
 
-        <Routes>
-          <Route path="/" element={<div className="p-8"><h1 className="text-3xl font-bold">Claude Prompt Manager</h1></div>} />
-          <Route path="/login" element={<div className="p-8"><h1 className="text-2xl">Login</h1></div>} />
-          <Route path="/register" element={<div className="p-8"><h1 className="text-2xl">Register</h1></div>} />
-          <Route path="/accounts" element={<div className="p-8"><h1 className="text-2xl">Accounts</h1></div>} />
-          <Route path="/prompts" element={<div className="p-8"><h1 className="text-2xl">Prompts</h1></div>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* Protected routes with layout */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/prompts" element={<PromptsPage />} />
+          <Route path="/accounts" element={<AccountsPage />} />
+          <Route path="/fragments" element={<FragmentsPage />} />
+        </Route>
+
+        {/* Redirect root to prompts */}
+        <Route path="/" element={<Navigate to="/prompts" replace />} />
+
+        {/* Catch all - redirect to prompts */}
+        <Route path="*" element={<Navigate to="/prompts" replace />} />
+      </Routes>
     </Router>
   );
 }
