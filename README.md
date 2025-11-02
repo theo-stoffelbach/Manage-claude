@@ -233,3 +233,4 @@ MIT
 
 - Theo S.
 - Lucas R.
+# Manage-claude
