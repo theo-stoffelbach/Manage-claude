@@ -6,6 +6,8 @@ const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
 const { pool, initializeDatabase } = require('./config/database');
 const { setupTerminalHandlers } = require('./socket/terminal');
+const { setupAuthHandlers } = require('./socket/auth');
+const { setupSessionHandlers } = require('./socket/session');
 require('dotenv').config();
 
 const app = express();
@@ -54,27 +56,33 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Terminal Claude Code Backend is running' });
 });
 
-// Serve test HTML page (for testing terminal)
+// Serve test HTML pages
 app.get('/test', (req, res) => {
   res.sendFile(path.join(__dirname, '../../test-terminal.html'));
+});
+
+app.get('/test-auth', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../test-auth.html'));
 });
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('🔌 Client connected:', socket.id);
 
+  // Setup authentication handlers (login, register, logout)
+  setupAuthHandlers(socket, io);
+
+  // Setup session handlers (create, list, load, rename, delete)
+  setupSessionHandlers(socket);
+
   // Setup terminal handlers (creates PTY and handles terminal events)
+  // Note: Terminal is created immediately on connection for testing
+  // In production, terminal should be created only when a session is loaded
   setupTerminalHandlers(socket);
 
   socket.on('disconnect', () => {
     console.log('🔌 Client disconnected:', socket.id);
   });
-
-  // TODO: Add more Socket.IO event handlers
-  // - auth:login
-  // - auth:register
-  // - session:create
-  // - claude:launch
 });
 
 // Initialize database and start server

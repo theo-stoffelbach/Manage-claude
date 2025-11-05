@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authentication Test - Terminal App</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #1e1e1e;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: white;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #4CAF50;
+    }
+    .section {
+      background-color: #2d2d2d;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border-left: 4px solid #4CAF50;
+    }
+    .status {
+      padding: 10px;
+      background-color: #3d3d3d;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .connected { color: #4CAF50; }
+    .disconnected { color: #f44336; }
+
+    input, button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    input {
+      background-color: #3d3d3d;
+      color: white;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:disabled {
+      background-color: #666;
+      cursor: not-allowed;
+    }
+    .log {
+      background-color: #000;
+      padding: 15px;
+      border-radius: 5px;
+      height: 300px;
+      overflow-y: scroll;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .log-item {
+      margin: 5px 0;
+      padding: 5px;
+      border-left: 3px solid #4CAF50;
+      padding-left: 10px;
+    }
+    .log-error {
+      border-left-color: #f44336;
+    }
+    .log-success {
+      border-left-color: #4CAF50;
+    }
+    .log-info {
+      border-left-color: #2196F3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 Authentication Test - Terminal Claude Code</h1>
+
+    <div class="status">
+      Socket Status: <span id="status" class="disconnected">Disconnected</span>
+    </div>
+
+    <!-- Registration Section -->
+    <div class="section">
+      <h2>Register New User</h2>
+      <input type="text" id="reg-username" placeholder="Username (3-20 chars)">
+      <input type="email" id="reg-email" placeholder="Email">
+      <input type="password" id="reg-password" placeholder="Password (min 6 chars)">
+      <button id="register-btn">Register</button>
+    </div>
+
+    <!-- Login Section -->
+    <div class="section">
+      <h2>Login</h2>
+      <input type="text" id="login-username" placeholder="Username">
+      <input type="password" id="login-password" placeholder="Password">
+      <button id="login-btn">Login</button>
+    </div>
+
+    <!-- Session Management -->
+    <div class="section">
+      <h2>Session Management</h2>
+      <button id="check-auth-btn">Check Authentication</button>
+      <button id="create-session-btn" disabled>Create Terminal Session</button>
+      <button id="list-sessions-btn" disabled>List My Sessions</button>
+      <button id="logout-btn" disabled>Logout</button>
+    </div>
+
+    <!-- Event Log -->
+    <div class="section">
+      <h2>Event Log</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <script>
+    // Connect to Socket.IO server
+    const socket = io('http://localhost:3001', {
+      withCredentials: true
+    });
+
+    // DOM elements
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('log');
+    const regBtn = document.getElementById('register-btn');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const checkAuthBtn = document.getElementById('check-auth-btn');
+    const createSessionBtn = document.getElementById('create-session-btn');
+    const listSessionsBtn = document.getElementById('list-sessions-btn');
+
+    let isAuthenticated = false;
+
+    // Logging function
+    function log(message, type = 'info') {
+      const item = document.createElement('div');
+      item.className = `log-item log-${type}`;
+      item.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logEl.appendChild(item);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Update UI based on auth state
+    function updateAuthState(authenticated) {
+      isAuthenticated = authenticated;
+      createSessionBtn.disabled = !authenticated;
+      listSessionsBtn.disabled = !authenticated;
+      logoutBtn.disabled = !authenticated;
+    }
+
+    // Socket connection events
+    socket.on('connect', () => {
+      statusEl.textContent = 'Connected';
+      statusEl.className = 'connected';
+      log('Connected to backend: ' + socket.id, 'success');
+    });
+
+    socket.on('disconnect', () => {
+      statusEl.textContent = 'Disconnected';
+      statusEl.className = 'disconnected';
+      log('Disconnected from backend', 'error');
+      updateAuthState(false);
+    });
+
+    // Register events
+    regBtn.addEventListener('click', () => {
+      const username = document.getElementById('reg-username').value;
+      const email = document.getElementById('reg-email').value;
+      const password = document.getElementById('reg-password').value;
+
+      if (!username || !email || !password) {
+        log('Please fill all registration fields', 'error');
+        return;
+      }
+
+      log(`Registering user: ${username}...`, 'info');
+      socket.emit('auth:register', { username, email, password });
+    });
+
+    socket.on('auth:register:success', (data) => {
+      log(`✅ Registration successful: ${data.user.username}`, 'success');
+      log(JSON.stringify(data, null, 2), 'success');
+    });
+
+    socket.on('auth:register:error', (data) => {
+      log(`❌ Registration failed: ${data.message}`, 'error');
+    });
+
+    // Login events
+    loginBtn.addEventListener('click', () => {
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+
+      if (!username || !password) {
+        log('Please fill all login fields', 'error');
+        return;
+      }
+
+      log(`Logging in: ${username}...`, 'info');
+      socket.emit('auth:login', { username, password });
+    });
+
+    socket.on('auth:login:success', (data) => {
+      log(`✅ Login successful: ${data.user.username}`, 'success');
+      log(JSON.stringify(data, null, 2), 'success');
+      updateAuthState(true);
+    });
+
+    socket.on('auth:login:error', (data) => {
+      log(`❌ Login failed: ${data.message}`, 'error');
+      updateAuthState(false);
+    });
+
+    // Logout events
+    logoutBtn.addEventListener('click', () => {
+      log('Logging out...', 'info');
+      socket.emit('auth:logout');
+    });
+
+    socket.on('auth:logout:success', (data) => {
+      log(`✅ ${data.message}`, 'success');
+      updateAuthState(false);
+    });
+
+    socket.on('auth:logout:error', (data) => {
+      log(`❌ Logout failed: ${data.message}`, 'error');
+    });
+
+    // Check auth
+    checkAuthBtn.addEventListener('click', () => {
+      log('Checking authentication...', 'info');
+      socket.emit('auth:check');
+    });
+
+    socket.on('auth:check:result', (data) => {
+      if (data.authenticated) {
+        log(`✅ Authenticated as: ${data.user.username}`, 'success');
+        updateAuthState(true);
+      } else {
+        log('❌ Not authenticated', 'info');
+        updateAuthState(false);
+      }
+    });
+
+    // Create session
+    createSessionBtn.addEventListener('click', () => {
+      const title = `Test Session ${new Date().toLocaleString()}`;
+      log(`Creating terminal session: ${title}`, 'info');
+      socket.emit('session:create', { title });
+    });
+
+    socket.on('session:created', (data) => {
+      log(`✅ Session created: ${data.session.id}`, 'success');
+      log(JSON.stringify(data.session, null, 2), 'success');
+    });
+
+    socket.on('session:create:error', (data) => {
+      log(`❌ Session creation failed: ${data.message}`, 'error');
+    });
+
+    // List sessions
+    listSessionsBtn.addEventListener('click', () => {
+      log('Fetching sessions...', 'info');
+      socket.emit('session:list');
+    });
+
+    socket.on('session:list:result', (data) => {
+      log(`✅ Found ${data.sessions.length} sessions`, 'success');
+      data.sessions.forEach(session => {
+        log(`  - [${session.id}] ${session.title} (${new Date(session.created_at).toLocaleString()})`, 'info');
+      });
+    });
+
+    socket.on('session:list:error', (data) => {
+      log(`❌ Session list failed: ${data.message}`, 'error');
+    });
+
+    log('Test page loaded. Try registering or logging in!', 'info');
+  </script>
+</body>
+</html>
