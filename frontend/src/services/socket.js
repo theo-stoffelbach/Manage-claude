@@ -1,6 +1,19 @@
 import { io } from 'socket.io-client';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
+// Automatically detect backend URL based on current window location
+// This allows the app to work whether accessed via localhost, IP, or domain
+const getBackendUrl = () => {
+  if (process.env.REACT_APP_BACKEND_URL) {
+    return process.env.REACT_APP_BACKEND_URL;
+  }
+
+  // Use the same hostname as the frontend, but port 3001
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  return `${protocol}//${hostname}:3001`;
+};
+
+const BACKEND_URL = getBackendUrl();
 
 // Create Socket.IO instance with autoConnect: false
 // We'll connect manually after authentication

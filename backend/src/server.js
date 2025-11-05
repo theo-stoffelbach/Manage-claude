@@ -19,7 +19,7 @@ const io = new Server(server, {
   cors: {
     origin: process.env.NODE_ENV === 'production'
       ? process.env.FRONTEND_URL
-      : 'http://localhost:3000',
+      : true, // Allow all origins in development
     credentials: true
   }
 });
