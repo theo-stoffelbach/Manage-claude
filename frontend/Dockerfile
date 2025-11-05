@@ -1,5 +1,7 @@
+# Frontend Dockerfile
 FROM node:18-alpine
 
+# Set working directory
 WORKDIR /app
 
 # Copy package files
@@ -11,15 +13,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build app
-RUN npm run build
-
 # Expose port
-EXPOSE 3005
+EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:3005/ || exit 1
-
-# Start Vite preview server
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "3005"]
+# Start development server
+CMD ["npm", "start"]

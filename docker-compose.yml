@@ -1,74 +1,76 @@
+version: '3.8'
+
 services:
-  mongodb:
-    image: mongo:7
-    container_name: claude_manager_mongodb
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: terminal_postgres
     restart: unless-stopped
     environment:
-      MONGO_INITDB_DATABASE: claude-manager
-    ports:
-      - "27017:27017"
+      POSTGRES_USER: terminal_user
+      POSTGRES_PASSWORD: terminal_password
+      POSTGRES_DB: terminal_app
     volumes:
-      - mongodb_data:/data/db
+      - pgdata:/var/lib/postgresql/data
     networks:
-      - claude_network
+      - app-network
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/claude-manager --quiet
+      test: ["CMD-SHELL", "pg_isready -U terminal_user -d terminal_app"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Backend Node.js Server
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: claude_manager_backend
+    container_name: terminal_backend
     restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 3105
-      MONGODB_URI: mongodb://mongodb:27017/claude-manager
-      JWT_SECRET: ${JWT_SECRET}
-      ENCRYPTION_SECRET: ${ENCRYPTION_SECRET}
-      FRONTEND_URL: http://localhost:3005
     ports:
-      - "3105:3105"
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://terminal_user:terminal_password@postgres:5432/terminal_app
+      SESSION_SECRET: ${SESSION_SECRET}
+      NODE_ENV: ${NODE_ENV:-development}
+      FRONTEND_URL: http://localhost:3000
     depends_on:
-      mongodb:
+      postgres:
         condition: service_healthy
     networks:
-      - claude_network
+      - app-network
     volumes:
-      - ./backend/src:/app/src:ro
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3105/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
+      - ./backend/src:/app/src
+      - /app/node_modules
 
+  # Frontend React App
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: claude_manager_frontend
+    container_name: terminal_frontend
     restart: unless-stopped
     ports:
-      - "3005:3005"
+      - "3000:3000"
+    environment:
+      REACT_APP_BACKEND_URL: http://localhost:3001
+      NODE_ENV: ${NODE_ENV:-development}
     depends_on:
       - backend
     networks:
-      - claude_network
-    environment:
-      VITE_API_URL: http://localhost:3105/api
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3005/"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-
-networks:
-  claude_network:
-    driver: bridge
+      - app-network
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules
+    stdin_open: true
+    tty: true
 
 volumes:
-  mongodb_data:
+  pgdata:
     driver: local
+
+networks:
+  app-network:
+    driver: bridge
