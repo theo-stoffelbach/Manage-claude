@@ -32,7 +32,8 @@ services:
     environment:
       PORT: 3001
       DATABASE_URL: postgresql://terminal_user:terminal_password@postgres:5432/terminal_app
-      SESSION_SECRET: ${SESSION_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET:-changeme_session_secret_12345}
+      JWT_SECRET: ${JWT_SECRET:-changeme_jwt_secret_67890}
       NODE_ENV: ${NODE_ENV:-development}
       FRONTEND_URL: http://localhost:3000
     depends_on:
