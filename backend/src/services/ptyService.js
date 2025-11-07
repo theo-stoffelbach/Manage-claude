@@ -10,7 +10,7 @@ const activeTerminals = new Map();
  * @param {string} initialDir - Initial working directory
  * @returns {Object} - PTY instance
  */
-function createTerminal(socketId, initialDir = os.homedir()) {
+function createTerminal(socketId, initialDir = '/volume1/Docker_data/claude-manager-test') {
   // Determine the shell based on OS
   const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
 
@@ -24,10 +24,13 @@ function createTerminal(socketId, initialDir = os.homedir()) {
       ...process.env,
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
+      HOME: '/volume1/Docker_data',
+      // Add common paths for better compatibility
+      PATH: process.env.PATH || '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
     }
   });
 
-  console.log(`✅ Created terminal for socket ${socketId}, PID: ${ptyProcess.pid}`);
+  console.log(`✅ Created terminal for socket ${socketId}, PID: ${ptyProcess.pid}, CWD: ${initialDir}`);
 
   // Store the terminal instance
   activeTerminals.set(socketId, ptyProcess);

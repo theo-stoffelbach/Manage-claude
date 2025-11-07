@@ -22,8 +22,15 @@ function setupTerminalHandlers(socket) {
     ptyService.killTerminal(socket.id);
   });
 
+  // Emit terminal:ready event after a short delay
+  setTimeout(() => {
+    console.log(`✅ Terminal ready for socket ${socket.id}, emitting terminal:ready`);
+    socket.emit('terminal:ready');
+  }, 500); // Wait 500ms for terminal to be fully initialized
+
   // Handle input from client (user typing in terminal)
   socket.on('terminal:input', (data) => {
+    console.log(`⌨️  Received terminal:input for socket ${socket.id}:`, data.substring(0, 50));
     ptyService.writeToTerminal(socket.id, data);
   });
 

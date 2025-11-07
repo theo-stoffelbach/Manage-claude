@@ -10,44 +10,70 @@ export default function Terminal() {
   const fitAddonRef = useRef(null);
 
   useEffect(() => {
-    // Initialize xterm.js
+    // Check if terminal container is ready
+    if (!terminalRef.current) return;
+
+    // Initialize xterm.js with black terminal aesthetic
     const term = new XTerm({
       cursorBlink: true,
       fontSize: 14,
-      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+      fontFamily: 'JetBrains Mono, Fira Code, Menlo, Monaco, "Courier New", monospace',
+      fontWeight: '400',
+      fontWeightBold: '700',
+      lineHeight: 1.4,
+      letterSpacing: 0,
       theme: {
-        background: '#1e1e1e',
-        foreground: '#d4d4d4',
-        cursor: '#ffffff',
-        cursorAccent: '#1e1e1e',
-        selection: 'rgba(255, 255, 255, 0.3)',
-        black: '#000000',
-        brightBlack: '#666666',
-        red: '#cd3131',
-        brightRed: '#f14c4c',
-        green: '#0dbc79',
-        brightGreen: '#23d18b',
-        yellow: '#e5e510',
-        brightYellow: '#f5f543',
-        blue: '#2472c8',
-        brightBlue: '#3b8eea',
-        magenta: '#bc3fbc',
-        brightMagenta: '#d670d6',
-        cyan: '#11a8cd',
-        brightCyan: '#29b8db',
-        white: '#e5e5e5',
-        brightWhite: '#e5e5e5',
+        background: '#0a0a0a',
+        foreground: '#e0e0e0',
+        cursor: '#ffd500',
+        cursorAccent: '#0a0a0a',
+        selection: 'rgba(255, 213, 0, 0.2)',
+        black: '#0a0a0a',
+        brightBlack: '#555555',
+        red: '#ff5555',
+        brightRed: '#ff6e6e',
+        green: '#50fa7b',
+        brightGreen: '#69ff94',
+        yellow: '#ffd500',
+        brightYellow: '#ffe44d',
+        blue: '#66d9ef',
+        brightBlue: '#7ee2f8',
+        magenta: '#ff79c6',
+        brightMagenta: '#ff92d0',
+        cyan: '#8be9fd',
+        brightCyan: '#a4ffff',
+        white: '#e0e0e0',
+        brightWhite: '#ffffff',
       }
     });
 
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
 
+    // Open terminal in the container
     term.open(terminalRef.current);
-    fitAddon.fit();
 
+    // Store references
     xtermRef.current = term;
     fitAddonRef.current = fitAddon;
+
+    // Wait for container to have dimensions before fitting
+    const fitTerminal = () => {
+      if (terminalRef.current && terminalRef.current.offsetParent !== null) {
+        try {
+          fitAddon.fit();
+          socket.emit('terminal:resize', {
+            cols: term.cols,
+            rows: term.rows
+          });
+        } catch (err) {
+          console.error('Error fitting terminal:', err);
+        }
+      }
+    };
+
+    // Fit after a short delay to ensure container has dimensions
+    const timeoutId = setTimeout(fitTerminal, 100);
 
     // Handle terminal output from backend
     socket.on('terminal:output', (data) => {
@@ -59,6 +85,15 @@ export default function Terminal() {
       term.write(`\r\n\r\n[Process exited with code ${exitCode}]\r\n`);
     });
 
+    // Wait for terminal to be ready, then run Claude login status check
+    socket.on('terminal:ready', () => {
+      console.log('🚀 Terminal ready event received! Executing check script...');
+      // Execute the Claude logged-in check script (full path on NAS)
+      const command = 'node /volume1/Docker_data/claude-manager-test/check-claude-logged-in.js\n';
+      console.log('📤 Sending command:', command);
+      socket.emit('terminal:input', command);
+    });
+
     // Send user input to backend
     term.onData((data) => {
       socket.emit('terminal:input', data);
@@ -66,30 +101,29 @@ export default function Terminal() {
 
     // Handle window resize
     const handleResize = () => {
-      fitAddon.fit();
-      socket.emit('terminal:resize', {
-        cols: term.cols,
-        rows: term.rows
-      });
+      if (terminalRef.current && terminalRef.current.offsetParent !== null) {
+        try {
+          fitAddon.fit();
+          socket.emit('terminal:resize', {
+            cols: term.cols,
+            rows: term.rows
+          });
+        } catch (err) {
+          console.error('Error resizing terminal:', err);
+        }
+      }
     };
 
     window.addEventListener('resize', handleResize);
 
-    // Initial resize
-    setTimeout(() => {
-      fitAddon.fit();
-      socket.emit('terminal:resize', {
-        cols: term.cols,
-        rows: term.rows
-      });
-    }, 100);
-
     // Cleanup
     return () => {
+      clearTimeout(timeoutId);
       window.removeEventListener('resize', handleResize);
       socket.off('terminal:output');
       socket.off('terminal:exit');
-      term.dispose();
+      socket.off('terminal:ready');
+      if (term) term.dispose();
     };
   }, []);
 
