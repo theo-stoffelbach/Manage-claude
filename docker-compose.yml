@@ -28,22 +28,26 @@ services:
     container_name: terminal_backend
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "3105:3105"
     environment:
-      PORT: 3001
+      PORT: 3105
       DATABASE_URL: postgresql://terminal_user:terminal_password@postgres:5432/terminal_app
       SESSION_SECRET: ${SESSION_SECRET:-changeme_session_secret_12345}
       JWT_SECRET: ${JWT_SECRET:-changeme_jwt_secret_67890}
       NODE_ENV: ${NODE_ENV:-development}
-      FRONTEND_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost:3005
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - app-network
+      - webnet
     volumes:
       - ./backend/src:/app/src
+      - ./backend/package.json:/app/package.json
       - /app/node_modules
+      # Mount NAS Docker_data directory for full project access
+      - /volume1/Docker_data:/volume1/Docker_data
 
   # Frontend React App
   frontend:
@@ -53,17 +57,25 @@ services:
     container_name: terminal_frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3005:3000"
     environment:
-      REACT_APP_BACKEND_URL: http://localhost:3001
+      # Backend URL configured for reverse proxy access via /api
+      REACT_APP_BACKEND_URL: http://claude-manager.theo-stoffelbach.fr/api
       NODE_ENV: ${NODE_ENV:-development}
+      HOST: 0.0.0.0
+      WDS_SOCKET_HOST: 0.0.0.0
     depends_on:
       - backend
     networks:
       - app-network
+      - webnet
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/package-lock.json:/app/package-lock.json
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./frontend/postcss.config.js:/app/postcss.config.js
       - /app/node_modules
     stdin_open: true
     tty: true
@@ -75,3 +87,5 @@ volumes:
 networks:
   app-network:
     driver: bridge
+  webnet:
+    external: true
