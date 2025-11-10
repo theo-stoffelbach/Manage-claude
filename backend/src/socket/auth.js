@@ -9,59 +9,15 @@ function setupAuthHandlers(socket, io) {
   console.log('🔐 Setting up auth handlers for socket:', socket.id);
 
   /**
-   * Handle user registration
+   * Handle user registration - DISABLED FOR SECURITY
+   * Users must be created via CLI command: npm run create-user
    * Event: auth:register
-   * Payload: { username, email, password }
    */
-  socket.on('auth:register', async ({ username, email, password }) => {
-    try {
-      // Validate input
-      if (!username || !email || !password) {
-        return socket.emit('auth:register:error', {
-          message: 'Username, email, and password are required'
-        });
-      }
-
-      // Validate username format
-      if (!/^[a-zA-Z0-9_-]{3,20}$/.test(username)) {
-        return socket.emit('auth:register:error', {
-          message: 'Username must be 3-20 characters (letters, numbers, _ or -)'
-        });
-      }
-
-      // Validate email format
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return socket.emit('auth:register:error', {
-          message: 'Invalid email format'
-        });
-      }
-
-      // Validate password length
-      if (password.length < 6) {
-        return socket.emit('auth:register:error', {
-          message: 'Password must be at least 6 characters'
-        });
-      }
-
-      // Create user
-      const user = await User.create(username, email, password);
-
-      console.log(`✅ User registered: ${user.username} (ID: ${user.id})`);
-
-      socket.emit('auth:register:success', {
-        message: 'Registration successful! Please login.',
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email
-        }
-      });
-    } catch (error) {
-      console.error('❌ Registration error:', error.message);
-      socket.emit('auth:register:error', {
-        message: error.message || 'Registration failed'
-      });
-    }
+  socket.on('auth:register', async () => {
+    socket.emit('auth:register:error', {
+      message: 'Registration is disabled. Please contact your administrator to create an account.'
+    });
+    console.warn('⚠️  Registration attempt blocked - feature disabled for security');
   });
 
   /**

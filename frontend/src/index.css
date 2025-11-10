@@ -1,23 +1,164 @@
-/* Terminal Claude Code - Styles */
+/* Tailwind CSS v3 directives - Updated */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* shadcn/ui theme variables - White Mode with Yellow Accent */
+@layer base {
+  :root {
+    /* Colors */
+    --color-background: 0 0% 100%;
+    --color-foreground: 0 0% 10%;
+    --color-card: 0 0% 100%;
+    --color-card-foreground: 0 0% 10%;
+    --color-popover: 0 0% 100%;
+    --color-popover-foreground: 0 0% 10%;
+    --color-primary: 48 100% 50%; /* Jaune vif */
+    --color-primary-foreground: 0 0% 10%;
+    --color-secondary: 0 0% 96%;
+    --color-secondary-foreground: 0 0% 10%;
+    --color-muted: 0 0% 96%;
+    --color-muted-foreground: 0 0% 45%;
+    --color-accent: 48 100% 50%; /* Jaune vif */
+    --color-accent-foreground: 0 0% 10%;
+    --color-destructive: 0 84.2% 60.2%;
+    --color-destructive-foreground: 0 0% 98%;
+    --color-border: 0 0% 90%;
+    --color-input: 0 0% 90%;
+    --color-ring: 48 100% 50%;
+    --radius: 0.75rem;
+  }
+}
+
+/* Force light mode - override dark mode */
+@layer base {
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* Keep light mode colors even in dark mode preference */
+      --color-background: 0 0% 100%;
+      --color-foreground: 0 0% 10%;
+      --color-card: 0 0% 100%;
+      --color-card-foreground: 0 0% 10%;
+      --color-popover: 0 0% 100%;
+      --color-popover-foreground: 0 0% 10%;
+      --color-primary: 48 100% 50%;
+      --color-primary-foreground: 0 0% 10%;
+      --color-secondary: 0 0% 96%;
+      --color-secondary-foreground: 0 0% 10%;
+      --color-muted: 0 0% 96%;
+      --color-muted-foreground: 0 0% 45%;
+      --color-accent: 48 100% 50%;
+      --color-accent-foreground: 0 0% 10%;
+      --color-destructive: 0 84.2% 60.2%;
+      --color-destructive-foreground: 0 0% 98%;
+      --color-border: 0 0% 90%;
+      --color-input: 0 0% 90%;
+      --color-ring: 48 100% 50%;
+    }
+  }
+}
+
+/* Base styles */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  border-color: hsl(var(--color-border));
 }
 
 body {
-  margin: 0;
+  background-color: hsl(var(--color-background));
+  color: hsl(var(--color-foreground));
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #1a1a1a;
-  color: #ffffff;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Custom Terminal styles - Black Terminal Aesthetic */
+.terminal-container {
+  background-color: #0a0a0a;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.6s ease-out forwards;
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, .card {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Yellow accent glow effect */
+.glow-yellow {
+  box-shadow: 0 0 20px rgba(255, 213, 0, 0.3);
+}
+
+/* Hover effects for cards */
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Custom scrollbar for terminal */
+.terminal-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-container::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+.terminal-container::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+.terminal-container::-webkit-scrollbar-thumb:hover {
+  background: #444;
 }

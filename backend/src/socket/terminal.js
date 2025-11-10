@@ -26,11 +26,12 @@ function setupTerminalHandlers(socket) {
   setTimeout(() => {
     console.log(`✅ Terminal ready for socket ${socket.id}, emitting terminal:ready`);
     socket.emit('terminal:ready');
-  }, 500); // Wait 500ms for terminal to be fully initialized
+  }, 1500); // Wait 1500ms for terminal and React to be fully initialized
 
   // Handle input from client (user typing in terminal)
   socket.on('terminal:input', (data) => {
-    console.log(`⌨️  Received terminal:input for socket ${socket.id}:`, data.substring(0, 50));
+    const preview = data.length > 80 ? data.substring(0, 80) + '...' : data;
+    console.log(`⌨️  Received terminal:input for socket ${socket.id}:`, preview);
     ptyService.writeToTerminal(socket.id, data);
   });
 

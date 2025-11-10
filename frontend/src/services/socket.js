@@ -7,10 +7,10 @@ const getBackendUrl = () => {
     return process.env.REACT_APP_BACKEND_URL;
   }
 
-  // Use the same hostname as the frontend, but port 3001
+  // Use the same hostname as the frontend, but port 3105
   const protocol = window.location.protocol;
   const hostname = window.location.hostname;
-  return `${protocol}//${hostname}:3001`;
+  return `${protocol}//${hostname}:3105`;
 };
 
 const BACKEND_URL = getBackendUrl();

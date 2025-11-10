@@ -4,7 +4,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import socket from '../services/socket';
 
-export default function Terminal() {
+export default function Terminal({ onTerminalOutput }) {
   const terminalRef = useRef(null);
   const xtermRef = useRef(null);
   const fitAddonRef = useRef(null);
@@ -78,20 +78,16 @@ export default function Terminal() {
     // Handle terminal output from backend
     socket.on('terminal:output', (data) => {
       term.write(data);
+
+      // Also pass data to parent component (MainApp) for Claude status detection
+      if (onTerminalOutput) {
+        onTerminalOutput(data);
+      }
     });
 
     // Handle terminal exit
     socket.on('terminal:exit', ({ exitCode }) => {
       term.write(`\r\n\r\n[Process exited with code ${exitCode}]\r\n`);
-    });
-
-    // Wait for terminal to be ready, then run Claude login status check
-    socket.on('terminal:ready', () => {
-      console.log('🚀 Terminal ready event received! Executing check script...');
-      // Execute the Claude logged-in check script (full path on NAS)
-      const command = 'node /volume1/Docker_data/claude-manager-test/check-claude-logged-in.js\n';
-      console.log('📤 Sending command:', command);
-      socket.emit('terminal:input', command);
     });
 
     // Send user input to backend
@@ -122,10 +118,9 @@ export default function Terminal() {
       window.removeEventListener('resize', handleResize);
       socket.off('terminal:output');
       socket.off('terminal:exit');
-      socket.off('terminal:ready');
       if (term) term.dispose();
     };
-  }, []);
+  }, [onTerminalOutput]); // Include onTerminalOutput in deps (it's wrapped in useCallback in parent)
 
   return (
     <div ref={terminalRef} className="w-full h-full" />
