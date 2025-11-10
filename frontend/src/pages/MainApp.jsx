@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Terminal from '../components/Terminal';
+import Logo from '../components/Logo';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { Terminal as TerminalIcon, Zap, Code2, Sparkles, LogOut, User, Play, Clock, Bot, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Zap, Code2, Sparkles, LogOut, User, Play, Clock, Bot, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import socket from '../services/socket';
 
 export default function MainApp() {
@@ -20,80 +21,173 @@ export default function MainApp() {
     checking: true, // Start with checking = true to hide buttons initially
     initialCheckDone: false // Track if initial auto-check is done
   });
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authStep, setAuthStep] = useState(null); // 'theme', 'oauth', 'complete'
 
-  // Listen to terminal output for Claude status
+  // Run Claude check when terminal is opened
   useEffect(() => {
-    const handleTerminalOutput = (data) => {
-      const output = data.toString();
+    if (showTerminal && !claudeInfo.initialCheckDone) {
+      console.log('🎯 Terminal opened - Running Claude check after delay...');
 
-      // Check for installation status
-      if (output.includes('CLAUDE_INSTALLED')) {
-        setClaudeInfo(prev => ({ ...prev, installed: true, checking: false, initialCheckDone: true }));
-      } else if (output.includes('CLAUDE_NOT_INSTALLED')) {
-        setClaudeInfo(prev => ({ ...prev, installed: false, loggedIn: false, checking: false, initialCheckDone: true }));
+      // Wait for terminal to be fully ready (2 seconds)
+      const checkTimeout = setTimeout(() => {
+        console.log('📤 Sending Claude check command...');
+        const command = 'node /volume1/Docker_data/claude-manager-test/check-claude-logged-in.js';
+        socket.emit('terminal:input', command + '\r');
+        console.log('✅ Command sent to terminal');
+      }, 2000);
+
+      return () => clearTimeout(checkTimeout);
+    }
+  }, [showTerminal, claudeInfo.initialCheckDone]);
+
+  // Handle terminal output from Terminal component (via callback)
+  const handleTerminalOutput = useCallback((data) => {
+    const output = data.toString();
+
+    // Debug: Log all output to see what we receive
+    if (output.includes('CLAUDE') || output.includes('claude') || output.includes('Claude')) {
+      console.log('🔍 Terminal output with CLAUDE:', output);
+    }
+
+    // Check for installation status
+    if (output.includes('CLAUDE_INSTALLED')) {
+      console.log('✅ Detected CLAUDE_INSTALLED');
+      setClaudeInfo(prev => ({ ...prev, installed: true, checking: false, initialCheckDone: true }));
+    } else if (output.includes('CLAUDE_NOT_INSTALLED')) {
+      console.log('❌ Detected CLAUDE_NOT_INSTALLED');
+      setClaudeInfo(prev => ({ ...prev, installed: false, loggedIn: false, checking: false, initialCheckDone: true }));
+    }
+
+    // Check for login status
+    if (output.includes('CLAUDE_NOT_LOGGED_IN')) {
+      console.log('⚠️  Detected CLAUDE_NOT_LOGGED_IN');
+      setClaudeInfo(prev => ({ ...prev, loggedIn: false, username: null, plan: null, model: null, checking: false, initialCheckDone: true }));
+    }
+
+    // Check for logged in status
+    if (output.includes('CLAUDE_LOGGED_IN')) {
+      console.log('✅ Detected CLAUDE_LOGGED_IN');
+      setClaudeInfo(prev => ({ ...prev, loggedIn: true, checking: false, initialCheckDone: true }));
+    }
+
+    // === AUTHENTICATION FLOW DETECTION ===
+
+    // Detect if Claude is already authenticated (shows the main interface)
+    if (isAuthenticating && (output.includes('Try "refactor') || output.includes('? for shortcuts'))) {
+      console.log('✅ Claude is already authenticated!');
+      setClaudeInfo(prev => ({ ...prev, loggedIn: true }));
+      setIsAuthenticating(false);
+      setAuthStep('complete');
+      setClaudeStatus('✅ Vous êtes déjà authentifié ! Claude est prêt à utiliser.');
+      setTimeout(() => {
+        setClaudeStatus(null);
+        setAuthStep(null);
+      }, 5000);
+    }
+
+    // Detect theme selection screen (not authenticated)
+    if (isAuthenticating && output.includes("Let's get started") && output.includes('Choose the text style')) {
+      console.log('📋 Theme selection detected - auto-selecting...');
+      setAuthStep('theme');
+      setClaudeStatus('Sélection du thème automatique...');
+
+      // Send 2 enters after a short delay to select default theme and proceed
+      setTimeout(() => {
+        console.log('📤 Sending first Enter...');
+        socket.emit('terminal:input', '\r');
+
+        setTimeout(() => {
+          console.log('📤 Sending second Enter...');
+          socket.emit('terminal:input', '\r');
+        }, 500);
+      }, 1000);
+    }
+
+    // Detect OAuth URL and copy to clipboard
+    // Check if OAuth URL is present in the output (more reliable than checking for text first)
+    const urlMatch = output.match(/(https:\/\/claude\.ai\/oauth\/authorize\?[^\s]+)/);
+
+    if (isAuthenticating && urlMatch && urlMatch[1] && authStep !== 'oauth') {
+      const oauthUrl = urlMatch[1];
+      console.log('🔗 OAuth URL detected:', oauthUrl);
+      setAuthStep('oauth');
+
+      // Check if clipboard API is available
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        // Copy to clipboard
+        navigator.clipboard.writeText(oauthUrl)
+          .then(() => {
+            console.log('✅ OAuth URL copied to clipboard!');
+            setClaudeStatus('🔗 Lien d\'authentification copié dans le presse-papier ! Ouvrez-le dans votre navigateur.');
+          })
+          .catch(err => {
+            console.error('❌ Failed to copy to clipboard:', err);
+            setClaudeStatus('⚠️ Copiez le lien manuellement depuis le terminal ci-dessus.');
+          });
+      } else {
+        console.warn('⚠️ Clipboard API not available');
+        setClaudeStatus('⚠️ Copiez le lien manuellement depuis le terminal ci-dessus.');
       }
+    }
 
-      // Check for login status
-      if (output.includes('CLAUDE_NOT_LOGGED_IN')) {
-        setClaudeInfo(prev => ({ ...prev, loggedIn: false, username: null, plan: null, model: null, checking: false, initialCheckDone: true }));
-      }
+    // Detect successful authentication completion
+    if (isAuthenticating && authStep === 'oauth' && (output.includes('Successfully logged in') || output.includes('Authentication successful'))) {
+      console.log('✅ Authentication completed!');
+      setClaudeInfo(prev => ({ ...prev, loggedIn: true }));
+      setIsAuthenticating(false);
+      setAuthStep('complete');
+      setClaudeStatus('✅ Authentification réussie ! Claude est maintenant connecté.');
+      setTimeout(() => {
+        setClaudeStatus(null);
+        setAuthStep(null);
+        checkClaudeStatus(); // Refresh status
+      }, 3000);
+    }
 
-      // Check for logged in status
-      if (output.includes('CLAUDE_LOGGED_IN')) {
-        setClaudeInfo(prev => ({ ...prev, loggedIn: true, checking: false, initialCheckDone: true }));
-      }
+    // Parse welcome message for account info
+    // Example: "Welcome back, Le S! You're using Claude Sonnet 4.5 on your Claude Pro plan."
+    const welcomeMatch = output.match(/Welcome back,\s+([^!]+)!/);
+    const modelMatch = output.match(/Claude\s+([^,\s]+(?:\s+[0-9.]+)?)/);
+    const planMatch = output.match(/Claude\s+(Pro|Free)/);
 
-      // Parse welcome message for account info
-      // Example: "Welcome back, Le S! You're using Claude Sonnet 4.5 on your Claude Pro plan."
-      const welcomeMatch = output.match(/Welcome back,\s+([^!]+)!/);
-      const modelMatch = output.match(/Claude\s+([^,\s]+(?:\s+[0-9.]+)?)/);
-      const planMatch = output.match(/Claude\s+(Pro|Free)/);
+    if (welcomeMatch) {
+      const username = welcomeMatch[1].trim();
+      const model = modelMatch ? modelMatch[1].trim() : null;
+      const plan = planMatch ? planMatch[1].trim() : null;
 
-      if (welcomeMatch) {
-        const username = welcomeMatch[1].trim();
-        const model = modelMatch ? modelMatch[1].trim() : null;
-        const plan = planMatch ? planMatch[1].trim() : null;
+      setClaudeInfo(prev => ({
+        ...prev,
+        loggedIn: true,
+        username: username,
+        model: model,
+        plan: plan
+      }));
+    }
 
-        setClaudeInfo(prev => ({
-          ...prev,
-          loggedIn: true,
-          username: username,
-          model: model,
-          plan: plan
-        }));
-      }
-
-      // Alternative: Parse "claude whoami" output
-      // Logged in as: le.s@example.com
-      const whoamiMatch = output.match(/Logged in as:\s+(.+)/);
-      if (whoamiMatch) {
-        setClaudeInfo(prev => ({ ...prev, loggedIn: true }));
-      }
-    };
-
-    socket.on('terminal:output', handleTerminalOutput);
-
-    return () => {
-      socket.off('terminal:output', handleTerminalOutput);
-    };
-  }, []);
+    // Alternative: Parse "claude whoami" output
+    // Logged in as: le.s@example.com
+    const whoamiMatch = output.match(/Logged in as:\s+(.+)/);
+    if (whoamiMatch) {
+      setClaudeInfo(prev => ({ ...prev, loggedIn: true }));
+    }
+  }, [isAuthenticating, authStep]); // Add dependencies for authentication flow
 
   // No automatic check on terminal show - the script runs automatically via terminal:ready event
 
   const checkClaudeStatus = () => {
+    console.log('🔍 Manual check Claude status triggered');
     setClaudeInfo(prev => ({ ...prev, checking: true }));
 
-    // Check if claude is installed
-    socket.emit('terminal:input', 'which claude && echo "CLAUDE_INSTALLED" || echo "CLAUDE_NOT_INSTALLED"\r');
+    // Run the check script
+    const command = 'node /volume1/Docker_data/claude-manager-test/check-claude-logged-in.js';
+    console.log('📤 Sending check command:', command);
+    socket.emit('terminal:input', command + '\r');
 
-    // Wait a bit then check if logged in
+    // Stop checking spinner after 3 seconds (markers should have been detected by then)
     setTimeout(() => {
-      socket.emit('terminal:input', 'claude whoami 2>/dev/null && echo "CLAUDE_LOGGED_IN" || echo "CLAUDE_NOT_LOGGED_IN"\r');
-
-      setTimeout(() => {
-        setClaudeInfo(prev => ({ ...prev, checking: false }));
-      }, 2000);
-    }, 1000);
+      setClaudeInfo(prev => ({ ...prev, checking: false }));
+    }, 3000);
   };
 
   const handleConnectClaude = () => {
@@ -111,13 +205,17 @@ export default function MainApp() {
   };
 
   const handleClaudeAuth = () => {
-    socket.emit('terminal:input', 'claude auth\r');
-    setClaudeStatus('Commande d\'authentification envoyée au terminal');
-    setTimeout(() => setClaudeStatus(null), 3000);
+    console.log('🔐 Starting Claude authentication...');
+    setIsAuthenticating(true);
+    setAuthStep(null);
+    setClaudeStatus('Lancement de Claude pour authentification...');
+
+    // Just launch claude (not "claude auth")
+    socket.emit('terminal:input', 'claude\r');
   };
 
   const handleInstallClaude = () => {
-    socket.emit('terminal:input', 'npm install -g @anthropics/claude\r');
+    socket.emit('terminal:input', 'npm install -g @anthropic-ai/claude-code\r');
     setClaudeStatus('Installation de Claude en cours...');
     setTimeout(() => {
       setClaudeStatus('Vérifiez le terminal pour le statut d\'installation');
@@ -134,12 +232,10 @@ export default function MainApp() {
       <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center shadow-sm">
-              <TerminalIcon className="w-6 h-6 text-gray-900" />
-            </div>
+            <Logo size="sm" />
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Claude Terminal</h1>
-              <p className="text-xs text-gray-500">Powered by AI</p>
+              <h1 className="text-xl font-bold text-gray-900">Claude Manager</h1>
+              <p className="text-xs text-gray-500">Terminal Web · Claude Code Control</p>
             </div>
           </div>
 
@@ -271,7 +367,7 @@ export default function MainApp() {
 
             {/* Terminal Card */}
             <Card className="flex-1 overflow-hidden border-gray-800 terminal-container mb-4">
-              <Terminal />
+              <Terminal onTerminalOutput={handleTerminalOutput} />
             </Card>
 
             {/* Claude Code Control Panel */}
@@ -359,23 +455,21 @@ export default function MainApp() {
                     </>
                   )}
 
-                  {/* Vérifier button - hidden initially, shown after first check */}
-                  {claudeInfo.initialCheckDone && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={checkClaudeStatus}
-                      disabled={claudeInfo.checking}
-                      className="gap-2"
-                    >
-                      {claudeInfo.checking ? (
-                        <div className="w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Code2 className="w-4 h-4" />
-                      )}
-                      Vérifier
-                    </Button>
-                  )}
+                  {/* Vérifier button - always visible */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={checkClaudeStatus}
+                    disabled={claudeInfo.checking}
+                    className="gap-2"
+                  >
+                    {claudeInfo.checking ? (
+                      <div className="w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Code2 className="w-4 h-4" />
+                    )}
+                    Vérifier
+                  </Button>
 
                   {/* Show loading state during initial check */}
                   {!claudeInfo.initialCheckDone && claudeInfo.checking && (
