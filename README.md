@@ -1,15 +1,52 @@
-# Terminal Claude Code Web
+# 🖥️ Claude Terminal Manager
 
-Application web full-stack permettant d'accéder à un terminal web en temps réel avec intégration Claude Code.
+Application web full-stack sécurisée permettant d'accéder à un terminal web en temps réel avec intégration Claude Code.
 
-## 🚀 Fonctionnalités
+## ⚠️ Sécurité - IMPORTANT
+
+**🔒 La registration publique est DÉSACTIVÉE pour des raisons de sécurité.**
+
+### Accès Terminal
+
+Le terminal web donne accès à :
+- ✅ **Tout le répertoire** `/volume1/Docker_data`
+- ✅ **Tous vos projets Docker** (Scrum-Clicker, Portfolio, etc.)
+- ✅ **Exécution de commandes** (git, npm, docker, etc.)
+
+**⚠️ ATTENTION** : Ne créez des comptes **QUE** pour des personnes de confiance !
+
+Seuls les administrateurs peuvent créer des comptes. Voir [Création d'utilisateurs](#-création-dutilisateurs).
+
+📖 **Documentation complète** : [SECURITY.md](./SECURITY.md)
+
+## 🚀 Démarrage rapide
+
+### 1. Lancer l'application
+
+```bash
+cd /volume1/Docker_data/claude-manager-test
+docker compose up -d
+```
+
+### 2. Créer votre premier utilisateur
+
+```bash
+./create-user.sh
+```
+
+### 3. Se connecter
+
+Ouvrez votre navigateur sur : **http://localhost:3005**
+
+## 🎯 Fonctionnalités
 
 - ✅ **Terminal web temps réel** : Vrai terminal bash via node-pty + xterm.js
-- ✅ **Authentification WebSocket** : Inscription/connexion sans routes HTTP
-- ✅ **Gestion des sessions** : Création, liste, chargement de sessions terminal
-- ✅ **Intégration Claude Code** : Lancement de Claude dans des projets
+- ✅ **Accès complet NAS** : Accès à `/volume1/Docker_data` et tous vos projets
+- ✅ **Authentification sécurisée** : bcrypt + sessions PostgreSQL
+- ✅ **Intégration Claude** : Bouton pour lancer Claude automatiquement
+- ✅ **Actions rapides** : Boutons pour commandes courantes (clear, ls, git status)
 - ✅ **Historique des commandes** : Sauvegarde en base PostgreSQL
-- ✅ **Interface moderne** : React + Tailwind CSS + shadcn/ui
+- ✅ **Interface moderne** : React + Tailwind CSS (white mode + yellow accent)
 
 ## 🏗️ Architecture
 
@@ -72,17 +109,57 @@ Pages de test disponibles :
 - **http://localhost:3001/test-auth** : Test authentification
 - **http://localhost:3001/health** : Health check
 
+## 👤 Création d'utilisateurs
+
+### Méthode 1 : Script NAS (Recommandé) ⭐
+
+```bash
+cd /volume1/Docker_data/claude-manager-test
+./create-user.sh
+```
+
+Le script vous demandera interactivement :
+- Username (3-20 caractères, alphanumerique)
+- Email (format valide)
+- Password (min 8 caractères : 1 majuscule + 1 minuscule + 1 chiffre)
+
+### Méthode 2 : Ligne de commande Docker
+
+```bash
+docker exec terminal_backend node src/scripts/createUserCLI.js <username> <email> <password>
+
+# Exemple
+docker exec terminal_backend node src/scripts/createUserCLI.js john john@example.com MyPass123
+```
+
+📖 Plus de détails : [CREATE_USER.md](./CREATE_USER.md)
+
 ## 📖 Utilisation
 
-### 1. Inscription/Connexion
-1. Ouvrir http://localhost:3000
-2. Créer un compte (username, email, password)
-3. Se connecter
+### 1. Connexion
+1. Ouvrir http://localhost:3005
+2. Se connecter avec votre compte créé par l'administrateur
 
 ### 2. Terminal web
 - Le terminal est créé automatiquement à la connexion
 - Taper des commandes comme dans un terminal normal
 - Support complet des couleurs ANSI et caractères spéciaux
+- **Panneau de contrôle en bas** :
+  - 🤖 Bouton "Lancer Claude" - Lance automatiquement Claude
+  - Actions rapides : Effacer, Liste fichiers, Git status
+
+### 3. Configuration de Claude (Optionnel)
+
+Pour utiliser le bouton Claude :
+
+```bash
+# Installer Claude CLI dans le container
+docker exec -it terminal_backend sh
+npm install -g @anthropics/claude
+claude auth
+```
+
+📖 Guide complet : [CLAUDE_SETUP.md](./CLAUDE_SETUP.md)
 
 ### 3. Gestion des sessions
 - Créer des sessions terminal multiples
@@ -127,11 +204,24 @@ claude auth
 
 ## 🔒 Sécurité
 
-- Sessions sécurisées avec cookies httpOnly
-- Mots de passe hachés avec bcrypt (10 rounds)
-- Validation des chemins de projet (pas de .., chemins absolus)
-- Isolation des terminaux par utilisateur
-- Authentification requise pour toutes les actions
+### Protections en place
+
+- ✅ **Registration publique DÉSACTIVÉE** - Seuls les admins créent des comptes
+- ✅ **Sessions sécurisées** - Cookies httpOnly + PostgreSQL
+- ✅ **Mots de passe forts** - bcrypt (10 rounds) + validation stricte
+- ✅ **Validation stricte** - Chemins, inputs, authentification
+- ✅ **Isolation** - Terminaux isolés par utilisateur
+- ✅ **Authentification requise** - Pour toutes les actions
+
+### Compte de test
+
+Un compte admin a été créé pour vos tests :
+- **Username** : `admin`
+- **Password** : `Admin1234`
+
+⚠️ **Changez ce mot de passe en production !**
+
+📖 Documentation complète : [SECURITY.md](./SECURITY.md)
 
 ## 🐳 Commandes Docker
 
