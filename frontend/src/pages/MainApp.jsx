@@ -497,14 +497,48 @@ export default function MainApp() {
                       <Button
                         size="sm"
                         onClick={() => {
-                          navigator.clipboard.writeText(oauthUrl)
+                          // Fallback copy method for when clipboard API is not available
+                          const copyToClipboard = (text) => {
+                            // Method 1: Try modern clipboard API
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                              return navigator.clipboard.writeText(text);
+                            }
+
+                            // Method 2: Fallback using textarea (works everywhere)
+                            return new Promise((resolve, reject) => {
+                              const textarea = document.createElement('textarea');
+                              textarea.value = text;
+                              textarea.style.position = 'fixed';
+                              textarea.style.opacity = '0';
+                              document.body.appendChild(textarea);
+                              textarea.focus();
+                              textarea.select();
+
+                              try {
+                                const successful = document.execCommand('copy');
+                                document.body.removeChild(textarea);
+
+                                if (successful) {
+                                  resolve();
+                                } else {
+                                  reject(new Error('Copy command failed'));
+                                }
+                              } catch (err) {
+                                document.body.removeChild(textarea);
+                                reject(err);
+                              }
+                            });
+                          };
+
+                          copyToClipboard(oauthUrl)
                             .then(() => {
                               setClaudeStatus('✅ Lien copié dans le presse-papier !');
                               setTimeout(() => setClaudeStatus(null), 3000);
                             })
-                            .catch(() => {
-                              setClaudeStatus('❌ Erreur de copie. Sélectionnez et copiez manuellement.');
-                              setTimeout(() => setClaudeStatus(null), 3000);
+                            .catch((err) => {
+                              console.error('Copy failed:', err);
+                              setClaudeStatus('❌ Erreur de copie. Sélectionnez et copiez manuellement le lien ci-dessus.');
+                              setTimeout(() => setClaudeStatus(null), 5000);
                             });
                         }}
                         className="bg-blue-500 hover:bg-blue-600 text-white gap-2"
