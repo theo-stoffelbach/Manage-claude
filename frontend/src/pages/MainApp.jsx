@@ -4,7 +4,7 @@ import Terminal from '../components/Terminal';
 import Logo from '../components/Logo';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { Zap, Code2, Sparkles, LogOut, User, Play, Clock, Bot, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Zap, Code2, Sparkles, LogOut, User, Play, Clock, Bot, CheckCircle, XCircle, AlertCircle, Copy, ExternalLink } from 'lucide-react';
 import socket from '../services/socket';
 
 export default function MainApp() {
@@ -23,6 +23,7 @@ export default function MainApp() {
   });
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authStep, setAuthStep] = useState(null); // 'theme', 'oauth', 'complete'
+  const [oauthUrl, setOauthUrl] = useState(null); // Store OAuth URL for display
 
   // Run Claude check when terminal is opened
   useEffect(() => {
@@ -109,25 +110,25 @@ export default function MainApp() {
     const urlMatch = output.match(/(https:\/\/claude\.ai\/oauth\/authorize\?[^\s]+)/);
 
     if (isAuthenticating && urlMatch && urlMatch[1] && authStep !== 'oauth') {
-      const oauthUrl = urlMatch[1];
-      console.log('🔗 OAuth URL detected:', oauthUrl);
+      const detectedUrl = urlMatch[1];
+      console.log('🔗 OAuth URL detected:', detectedUrl);
       setAuthStep('oauth');
+      setOauthUrl(detectedUrl); // Store for display
 
-      // Check if clipboard API is available
+      // Try to copy to clipboard - but don't rely on it due to security restrictions
       if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        // Copy to clipboard
-        navigator.clipboard.writeText(oauthUrl)
+        navigator.clipboard.writeText(detectedUrl)
           .then(() => {
             console.log('✅ OAuth URL copied to clipboard!');
-            setClaudeStatus('🔗 Lien d\'authentification copié dans le presse-papier ! Ouvrez-le dans votre navigateur.');
+            setClaudeStatus('🔗 Lien copié ! Cliquez sur "Copier le lien" ci-dessous si ça n\'a pas fonctionné.');
           })
           .catch(err => {
             console.error('❌ Failed to copy to clipboard:', err);
-            setClaudeStatus('⚠️ Copiez le lien manuellement depuis le terminal ci-dessus.');
+            setClaudeStatus('🔗 Cliquez sur "Copier le lien" ci-dessous pour copier le lien d\'authentification.');
           });
       } else {
         console.warn('⚠️ Clipboard API not available');
-        setClaudeStatus('⚠️ Copiez le lien manuellement depuis le terminal ci-dessus.');
+        setClaudeStatus('🔗 Cliquez sur "Copier le lien" ci-dessous pour copier le lien d\'authentification.');
       }
     }
 
@@ -480,6 +481,55 @@ export default function MainApp() {
                   )}
                 </div>
               </div>
+
+              {/* OAuth Link Display - Show when authentication is in progress and URL is detected */}
+              {oauthUrl && authStep === 'oauth' && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                      <ExternalLink className="w-4 h-4" />
+                      Lien d'authentification Claude
+                    </p>
+                    <div className="bg-white border border-blue-300 rounded px-3 py-2 mb-2 font-mono text-xs break-all text-blue-800 max-h-20 overflow-y-auto">
+                      {oauthUrl}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(oauthUrl)
+                            .then(() => {
+                              setClaudeStatus('✅ Lien copié dans le presse-papier !');
+                              setTimeout(() => setClaudeStatus(null), 3000);
+                            })
+                            .catch(() => {
+                              setClaudeStatus('❌ Erreur de copie. Sélectionnez et copiez manuellement.');
+                              setTimeout(() => setClaudeStatus(null), 3000);
+                            });
+                        }}
+                        className="bg-blue-500 hover:bg-blue-600 text-white gap-2"
+                      >
+                        <Copy className="w-4 h-4" />
+                        Copier le lien
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          window.open(oauthUrl, '_blank', 'noopener,noreferrer');
+                        }}
+                        className="gap-2"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Ouvrir dans un nouvel onglet
+                      </Button>
+                    </div>
+                    <p className="text-xs text-blue-700 mt-2">
+                      💡 Après vous être authentifié dans le navigateur, collez le code dans le terminal ci-dessus.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Quick actions */}
               <div className="mt-3 pt-3 border-t border-gray-200">
