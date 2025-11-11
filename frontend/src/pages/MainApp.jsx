@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Terminal from '../components/Terminal';
 import Logo from '../components/Logo';
+import ProfileSelector from '../components/ProfileSelector';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { Zap, Code2, Sparkles, LogOut, User, Play, Clock, Bot, CheckCircle, XCircle, AlertCircle, Copy, ExternalLink } from 'lucide-react';
+import { Zap, Code2, Sparkles, LogOut, User, Play, Clock, Bot, CheckCircle, XCircle, AlertCircle, Copy, ExternalLink, Users } from 'lucide-react';
 import socket from '../services/socket';
 
 export default function MainApp() {
@@ -24,6 +25,8 @@ export default function MainApp() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authStep, setAuthStep] = useState(null); // 'theme', 'oauth', 'complete'
   const [oauthUrl, setOauthUrl] = useState(null); // Store OAuth URL for display
+  const [enterSent, setEnterSent] = useState(false); // Track if we already sent Enter for login confirmation
+  const [showProfiles, setShowProfiles] = useState(false); // Toggle profile selector visibility
 
   // Run Claude check when terminal is opened
   useEffect(() => {
@@ -51,6 +54,11 @@ export default function MainApp() {
       console.log('🔍 Terminal output with CLAUDE:', output);
     }
 
+    // Debug: Log ALL output during authentication to catch "Logged in as" messages
+    if (isAuthenticating) {
+      console.log('🔐 [AUTH] Terminal output:', output.substring(0, 200)); // First 200 chars
+    }
+
     // Check for installation status
     if (output.includes('CLAUDE_INSTALLED')) {
       console.log('✅ Detected CLAUDE_INSTALLED');
@@ -75,7 +83,8 @@ export default function MainApp() {
     // === AUTHENTICATION FLOW DETECTION ===
 
     // Detect if Claude is already authenticated (shows the main interface)
-    if (isAuthenticating && (output.includes('Try "refactor') || output.includes('? for shortcuts'))) {
+    // Only trigger if we're NOT in the OAuth flow (to avoid conflict with OAuth completion)
+    if (isAuthenticating && !authStep && (output.includes('Try "refactor') || output.includes('? for shortcuts'))) {
       console.log('✅ Claude is already authenticated!');
       setClaudeInfo(prev => ({ ...prev, loggedIn: true }));
       setIsAuthenticating(false);
@@ -132,9 +141,31 @@ export default function MainApp() {
       }
     }
 
-    // Detect successful authentication completion
-    if (isAuthenticating && authStep === 'oauth' && (output.includes('Successfully logged in') || output.includes('Authentication successful'))) {
-      console.log('✅ Authentication completed!');
+    // Detect "Logged in as" which appears after pasting the OAuth code
+    // This is more reliable than waiting for the full "Press Enter to continue" message
+    if (isAuthenticating && authStep === 'oauth' && !enterSent && output.includes('Logged in as')) {
+      console.log('✅ Login successful detected with "Logged in as" - Auto-pressing Enter twice...');
+      setClaudeStatus('✅ Connexion réussie ! Finalisation...');
+      setEnterSent(true); // Mark that we sent Enter to avoid sending multiple times
+
+      // Wait a bit longer to ensure the full message is displayed, then press Enter twice
+      setTimeout(() => {
+        console.log('📤 Sending first Enter...');
+        socket.emit('terminal:input', '\r');
+
+        setTimeout(() => {
+          console.log('📤 Sending second Enter...');
+          socket.emit('terminal:input', '\r');
+        }, 500);
+      }, 1000);
+    }
+
+    // Detect successful authentication completion (after Enter is pressed)
+    // IMPORTANT: Only trigger this AFTER we've detected "Logged in as" and sent Enter (enterSent = true)
+    // This waits for the actual prompt/interface to appear after authentication
+    // Look for interface elements like "Try" or "?" that appear after successful login
+    if (isAuthenticating && authStep === 'oauth' && enterSent && (output.includes('Try "refactor') || output.includes('? for shortcuts'))) {
+      console.log('✅ Authentication completed - Claude interface detected!');
       setClaudeInfo(prev => ({ ...prev, loggedIn: true }));
       setIsAuthenticating(false);
       setAuthStep('complete');
@@ -142,6 +173,8 @@ export default function MainApp() {
       setTimeout(() => {
         setClaudeStatus(null);
         setAuthStep(null);
+        setOauthUrl(null); // Clear OAuth URL
+        setEnterSent(false); // Reset for next auth
         checkClaudeStatus(); // Refresh status
       }, 3000);
     }
@@ -209,6 +242,8 @@ export default function MainApp() {
     console.log('🔐 Starting Claude authentication...');
     setIsAuthenticating(true);
     setAuthStep(null);
+    setEnterSent(false); // Reset enter sent flag
+    setOauthUrl(null); // Reset OAuth URL
     setClaudeStatus('Lancement de Claude pour authentification...');
 
     // Just launch claude (not "claude auth")
@@ -369,6 +404,40 @@ export default function MainApp() {
             {/* Terminal Card */}
             <Card className="flex-1 overflow-hidden border-gray-800 terminal-container mb-4">
               <Terminal onTerminalOutput={handleTerminalOutput} />
+            </Card>
+
+            {/* Profile Selector - Collapsible */}
+            <Card className="mb-4 border-gray-200 bg-white">
+              <div className="p-4">
+                <button
+                  onClick={() => setShowProfiles(!showProfiles)}
+                  className="w-full flex items-center justify-between text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                      <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Profils Claude</h4>
+                      <p className="text-sm text-gray-600">
+                        Gérer vos comptes Claude (multi-profils)
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`transform transition-transform ${showProfiles ? 'rotate-180' : ''}`}>
+                    <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+              </div>
+              {showProfiles && (
+                <div className="px-4 pb-4 pt-0 border-t border-gray-200">
+                  <div className="mt-4">
+                    <ProfileSelector socket={socket} />
+                  </div>
+                </div>
+              )}
             </Card>
 
             {/* Claude Code Control Panel */}
