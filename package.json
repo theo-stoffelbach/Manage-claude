@@ -1,5 +1,14 @@
 {
+  "name": "claude-manager",
+  "version": "1.0.0",
+  "description": "Web-based Claude Code manager with terminal integration",
+  "scripts": {
+    "inspect-cookies": "node inspect-claude-cookies.js",
+    "check-cookies": "node check-cookie-expiry.js"
+  },
   "dependencies": {
-    "claude": "^0.1.1"
+    "claude": "^0.1.1",
+    "puppeteer": "^24.29.1",
+    "socket.io-client": "^4.8.1"
   }
 }

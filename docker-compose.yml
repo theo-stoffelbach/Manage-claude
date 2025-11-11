@@ -49,6 +49,8 @@ services:
       - /app/node_modules
       # Mount NAS Docker_data directory for full project access
       - /volume1/Docker_data:/volume1/Docker_data
+      # Mount host's Claude directory for profile management
+      - /root/.claude:/root/.claude
 
   # Frontend React App
   frontend:
