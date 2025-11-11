@@ -44,6 +44,7 @@ services:
       - webnet
     volumes:
       - ./backend/src:/app/src
+      - ./backend/services:/app/services
       - ./backend/package.json:/app/package.json
       - /app/node_modules
       # Mount NAS Docker_data directory for full project access
