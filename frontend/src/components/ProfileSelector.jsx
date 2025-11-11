@@ -79,6 +79,13 @@ function ProfileSelector({ socket }) {
       setTimeout(() => setError(null), 5000);
     });
 
+    socket.on('profiles:launch-claude', ({ email }) => {
+      // Envoyer la commande claude au terminal
+      socket.emit('terminal:input', 'claude\r');
+      setSuccessMessage(`✅ Claude lancé avec le profil ${email}`);
+      setTimeout(() => setSuccessMessage(null), 4000);
+    });
+
     return () => {
       socket.off('profiles:list-response');
       socket.off('profiles:active-changed');
@@ -87,6 +94,7 @@ function ProfileSelector({ socket }) {
       socket.off('profiles:saved');
       socket.off('profiles:deleted');
       socket.off('profiles:error');
+      socket.off('profiles:launch-claude');
     };
   }, [socket]);
 
@@ -94,6 +102,12 @@ function ProfileSelector({ socket }) {
     if (!socket) return;
     setIsLoading(true);
     socket.emit('profiles:set-active', { email });
+  };
+
+  const handleSetActiveAndLaunch = (email) => {
+    if (!socket) return;
+    setIsLoading(true);
+    socket.emit('profiles:set-active-and-launch', { email });
   };
 
   const handleCreateProfile = (e) => {
@@ -246,13 +260,22 @@ function ProfileSelector({ socket }) {
 
                 <div className="flex gap-2">
                   {profile.email !== activeProfile && profile.isValid && (
-                    <button
-                      onClick={() => handleSetActive(profile.email)}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
-                      disabled={isLoading}
-                    >
-                      Activer
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleSetActiveAndLaunch(profile.email)}
+                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors font-semibold"
+                        disabled={isLoading}
+                      >
+                        Activer & Lancer
+                      </button>
+                      <button
+                        onClick={() => handleSetActive(profile.email)}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+                        disabled={isLoading}
+                      >
+                        Activer
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => handleDeleteProfile(profile.email)}

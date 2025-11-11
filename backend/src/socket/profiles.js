@@ -82,6 +82,30 @@ function setupProfileHandlers(io, socket) {
   });
 
   /**
+   * Changer de profil actif ET lancer Claude automatiquement
+   */
+  socket.on('profiles:set-active-and-launch', async ({ email }) => {
+    try {
+      console.log(`[Profiles] Switching to profile and launching Claude: ${email}`);
+      await profileManager.setActiveProfile(email);
+
+      socket.emit('profiles:active-changed', { email });
+
+      // Notifier tous les autres clients
+      socket.broadcast.emit('profiles:active-changed', { email });
+
+      // Envoyer la commande claude au terminal après un court délai
+      setTimeout(() => {
+        socket.emit('profiles:launch-claude', { email });
+        console.log(`[Profiles] ✅ Profile switched to ${email}, launching Claude...`);
+      }, 500);
+    } catch (error) {
+      console.error('[Profiles] Error setting active profile:', error.message);
+      socket.emit('profiles:error', { error: error.message });
+    }
+  });
+
+  /**
    * Créer un nouveau profil (vide)
    */
   socket.on('profiles:create', async ({ email }) => {
