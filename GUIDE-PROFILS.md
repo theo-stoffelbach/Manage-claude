@@ -48,9 +48,17 @@ Si vous avez déjà un compte Claude actif sur le système :
 
 ### 4. Basculer entre profils
 
-1. Dans la liste des profils, cliquez sur **"Activer"** à côté du profil souhaité
-2. Le profil devient actif instantanément
-3. Toutes les futures commandes Claude utiliseront ce compte
+**Option A : Activer et lancer automatiquement (recommandé)**
+
+1. Dans la liste des profils, cliquez sur **"Activer & Lancer"** (bouton vert) à côté du profil souhaité
+2. Le profil devient actif ET Claude se lance automatiquement dans le terminal
+3. Vous pouvez immédiatement commencer à travailler avec le nouveau compte
+
+**Option B : Activer seulement (sans lancer Claude)**
+
+1. Cliquez sur **"Activer"** (bouton bleu) à côté du profil souhaité
+2. Le profil devient actif
+3. Lancez manuellement Claude avec la commande `claude` quand vous êtes prêt
 
 ### 5. Supprimer un profil
 
@@ -130,20 +138,22 @@ Chaque fichier `.json` contient :
 
 ```
 9h00 - Projet Personnel (compte perso@email.com)
-  → Activer profil "perso@email.com"
-  → Lancer Claude
+  → Clic sur "Activer & Lancer" pour "perso@email.com"
+  → Claude démarre automatiquement avec ce compte
   → Travailler sur le projet
 
 14h00 - Projet Client A (compte client-a@entreprise.com)
-  → Activer profil "client-a@entreprise.com"
-  → Lancer Claude
+  → Clic sur "Activer & Lancer" pour "client-a@entreprise.com"
+  → Claude redémarre automatiquement avec le compte client
   → Développer pour le client
 
 17h00 - Projet Interne (compte travail@societe.fr)
-  → Activer profil "travail@societe.fr"
-  → Lancer Claude
+  → Clic sur "Activer & Lancer" pour "travail@societe.fr"
+  → Claude redémarre automatiquement avec le compte pro
   → Finaliser les tâches
 ```
+
+**Temps de changement de profil** : ~2 secondes ⚡
 
 ## ⚠️ Points d'attention
 
@@ -217,9 +227,11 @@ tar -xzf claude-profiles-backup-20241111.tar.gz -C /
 
 1. **Pas de re-authentification constante** : Les tokens durent 90 jours
 2. **Changement instantané** : Basculer entre comptes en 1 clic
-3. **Interface visuelle** : Pas besoin de ligne de commande
-4. **Monitoring** : Voir l'état et expiration de tous les comptes
-5. **Multi-projets** : Gérer facilement plusieurs clients/projets
+3. **Lancement automatique** : Claude démarre automatiquement avec le bon profil
+4. **Interface visuelle** : Pas besoin de ligne de commande
+5. **Monitoring** : Voir l'état et expiration de tous les comptes
+6. **Multi-projets** : Gérer facilement plusieurs clients/projets
+7. **Ultra-rapide** : ~2 secondes pour changer de compte et être opérationnel
 
 ---
 
