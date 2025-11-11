@@ -24,7 +24,7 @@ function createTerminal(socketId, initialDir = '/volume1/Docker_data/claude-mana
       ...process.env,
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
-      HOME: '/volume1/Docker_data',
+      HOME: '/root', // Point to /root so Claude finds .credentials.json at /root/.claude/
       // Add common paths for better compatibility
       PATH: process.env.PATH || '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
     }
