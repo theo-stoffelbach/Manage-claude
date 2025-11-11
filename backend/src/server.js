@@ -9,6 +9,7 @@ const { setupTerminalHandlers } = require('./socket/terminal');
 const { setupAuthHandlers } = require('./socket/auth');
 const { setupSessionHandlers } = require('./socket/session');
 const { setupClaudeHandlers } = require('./socket/claude');
+const setupProfileHandlers = require('./socket/profiles');
 require('dotenv').config();
 
 const app = express();
@@ -78,6 +79,9 @@ io.on('connection', (socket) => {
 
   // Setup Claude Code handlers (launch, check installation)
   setupClaudeHandlers(socket);
+
+  // Setup profile handlers (multi-account management)
+  setupProfileHandlers(io, socket);
 
   // Setup terminal handlers (creates PTY and handles terminal events)
   // Note: Terminal is created immediately on connection for testing
